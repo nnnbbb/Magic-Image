@@ -35,10 +35,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="capture-screen.cpp" />
+    <ClCompile Include="http-requests.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="string.utils.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="capture-screen.h" />
+    <ClInclude Include="http-requests.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -49,6 +54,8 @@
     <Configuration>Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">Win32</Platform>
     <RootNamespace>Magic_Image</RootNamespace>
+    <WindowsTargetPlatformVersion>$(LatestTargetPlatformVersion)</WindowsTargetPlatformVersion>
+    <ApiValidator_Enable>false</ApiValidator_Enable>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -76,7 +83,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <DriverTargetPlatform>Universal</DriverTargetPlatform>
     <CharacterSet>Unicode</CharacterSet>
-    <Driver_SpectreMitigation>Spectre</Driver_SpectreMitigation>
+    <Driver_SpectreMitigation>false</Driver_SpectreMitigation>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
@@ -85,7 +92,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <DriverTargetPlatform>Universal</DriverTargetPlatform>
     <CharacterSet>Unicode</CharacterSet>
-    <Driver_SpectreMitigation>Spectre</Driver_SpectreMitigation>
+    <Driver_SpectreMitigation>false</Driver_SpectreMitigation>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
@@ -119,7 +126,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <DriverTargetPlatform>Universal</DriverTargetPlatform>
     <CharacterSet>Unicode</CharacterSet>
-    <Driver_SpectreMitigation>Spectre</Driver_SpectreMitigation>
+    <Driver_SpectreMitigation>false</Driver_SpectreMitigation>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -143,27 +150,31 @@
       <PreprocessorDefinitions>WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP;WINAPI_PARTITION_DESKTOP=1;WINAPI_PARTITION_SYSTEM=1;WINAPI_PARTITION_APP=1;WINAPI_PARTITION_PC_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <TreatWarningAsError>false</TreatWarningAsError>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <SDLCheck>false</SDLCheck>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>%(AdditionalDependencies);onecoreuap.lib</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies);onecoreuap.lib;dwmapi.lib;jsoncpp.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PreprocessorDefinitions>_DEBUG;WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP;WINAPI_PARTITION_DESKTOP=1;WINAPI_PARTITION_SYSTEM=1;WINAPI_PARTITION_APP=1;WINAPI_PARTITION_PC_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <TreatWarningAsError>false</TreatWarningAsError>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>%(AdditionalDependencies);onecoreuap.lib</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies);onecoreuap.lib;dwmapi.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <PreprocessorDefinitions>WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP;WINAPI_PARTITION_DESKTOP=1;WINAPI_PARTITION_SYSTEM=1;WINAPI_PARTITION_APP=1;WINAPI_PARTITION_PC_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <SDLCheck>false</SDLCheck>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>%(AdditionalDependencies);onecoreuap.lib</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies);onecoreuap.lib;dwmapi.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">

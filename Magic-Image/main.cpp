@@ -4,7 +4,51 @@
 #include <iostream>
 #include <dwmapi.h>
 #include <string>
+#include <png.h>
+#include <filesystem>
+#include <cstdio>
 #include "utils.h"
+#include "http-requests.h"
+#include "capture-screen.h"
+
+
+static std::wstring text = L"Hello, Windows";
+
+
+void PaintText(HDC hdc, std::wstring text) {
+    HFONT hFont = CreateFont(
+      30,                             // 字体高度
+      0,                              // 字体宽度
+      0,                              // 字体倾斜角度
+      0,                              // 字体倾斜方向
+      FW_NORMAL,                      // 字体重量
+      FALSE,                          // 斜体
+      FALSE,                          // 下划线
+      FALSE,                          // 删除线
+      DEFAULT_CHARSET,                // 字符集
+      OUT_PS_ONLY_PRECIS,             // 输出精度
+      CLIP_STROKE_PRECIS,             // 剪辑精度
+      PROOF_QUALITY,                  // 输出质量
+      DEFAULT_PITCH | FF_SWISS,       // 字体类别
+      L"CodeNewRoman Nerd Font Mono"  // 字体名称
+    );
+
+    // 选择字体到设备上下文
+    HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+
+    // 设置文本颜色
+    SetTextColor(hdc, RGB(255, 255, 255));  // 黑色
+    // 设置背景颜色
+    SetBkMode(hdc, TRANSPARENT);  // 透明背景
+
+    // 绘制文本
+    TextOut(hdc, 50, 40, text.c_str(), text.length());
+
+    // 恢复旧字体
+    SelectObject(hdc, hOldFont);
+    // 删除创建的字体
+    DeleteObject(hFont);
+}
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
@@ -19,6 +63,24 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 visible = !visible;
                 ShowWindow(hwnd, visible ? SW_SHOW : SW_HIDE);
                 visible ? SetWindowTop(hwnd) : SetWindowUnTop(hwnd);
+
+                if (visible == false) {
+                    RECT rect;
+
+                    DwmGetWindowAttribute(
+                      hwnd,
+                      DWMWA_EXTENDED_FRAME_BOUNDS,
+                      &rect,
+                      sizeof(rect)
+                    );
+                    LONG width = rect.right - rect.left;
+                    LONG height = rect.bottom - rect.top;
+                    LONG x = rect.left;
+                    LONG y = rect.top + height;
+
+                    std::string path = CaptureScreen(x, y, width, height);
+                    text = Utf8ToUtf16(Post(path));
+                }
             }
             break;
         }
@@ -79,6 +141,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             FillRect(hdc, &rc, hBrush);                         // 用黑色填充窗口
             DeleteObject(hBrush);                               // 删除画刷以释放资源
 
+            // SetTextColor(hdc, RGB(0, 0, 0));  // 设置文本颜色为黑色
+            // SetBkMode(hdc, TRANSPARENT);      // 透明背景
+            // TextOut(hdc, 10, 10, text.c_str(), text.length());
+            PaintText(hdc, text);
             EndPaint(hwnd, &ps);
             return 0;
         }
@@ -143,13 +209,40 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
+HANDLE hProcess;
+DWORD WINAPI ExecuteNodeScript(LPVOID lpParam) {
+    std::wstring nodePath = L"node.exe";
+    std::wstring directory = L"D:/code/PaddleOCR-json/api/node.js/test/";
+    std::wstring scriptPath = directory + L"app.js";
 
-int WINAPI WinMain(
-  _In_ HINSTANCE hInstance,
-  _In_opt_ HINSTANCE hPrevInstance,
-  _In_ LPSTR lpCmdLine,
-  _In_ int nShowCmd
-) {
+    // 创建一个 SHELLEXECUTEINFO 结构体
+    SHELLEXECUTEINFO sei;
+    ZeroMemory(&sei, sizeof(sei));
+    sei.cbSize = sizeof(sei);
+    sei.fMask = SEE_MASK_NOCLOSEPROCESS;  // 允许在执行后获得进程句柄
+    sei.hwnd = NULL;
+    sei.lpVerb = NULL;                      // 默认操作
+    sei.lpFile = nodePath.c_str();          // 可执行文件
+    sei.lpParameters = scriptPath.c_str();  // 传递的参数
+    sei.lpDirectory = directory.c_str();    // 目录
+    sei.nShow = SW_HIDE /* SW_SHOW */;      // 窗口显示方式
+    sei.hInstApp = NULL;
+    // 执行 Node.js 程序
+    if (ShellExecuteEx(&sei)) {
+        // 等待子进程结束
+        hProcess = sei.hProcess;
+        WaitForSingleObject(sei.hProcess, INFINITE);
+        // 关闭进程句柄
+        CloseHandle(sei.hProcess);
+    } else {
+        std::cerr << "ShellExecuteEx failed (" << GetLastError() << ")." << std::endl;
+        return 1;
+    }
+
+    return 0;
+}
+
+HWND CreateMainWindow() {
     const wchar_t CLASS_NAME[] = L"Sample Window Class";
 
     WNDCLASS wc = {};
@@ -188,10 +281,26 @@ int WINAPI WinMain(
         MessageBox(NULL, L"Hotkey Registration Failed!", L"Error!", MB_ICONEXCLAMATION | MB_OK);
         return 0;
     }
+    return hwnd;
+}
 
+int WINAPI WinMain(
+  _In_ HINSTANCE hInstance,
+  _In_opt_ HINSTANCE hPrevInstance,
+  _In_ LPSTR lpCmdLine,
+  _In_ int nShowCmd
+) {
+
+    HWND hwnd = CreateMainWindow();
 #ifdef _DEBUG
     SetupConsole();
 #endif
+
+    HANDLE hThread = CreateThread(NULL, 0, ExecuteNodeScript, NULL, 0, NULL);
+    if (hThread == NULL) {
+        std::cerr << "CreateThread failed (" << GetLastError() << ")." << std::endl;
+        return 1;
+    }
 
     MSG msg = {};
     while (GetMessage(&msg, NULL, 0, 0)) {
@@ -203,7 +312,14 @@ int WINAPI WinMain(
     DestroyConsole();
 #endif
 
-    SaveWindowPlacement(hwnd);
-    UnregisterHotKey(hwnd, F4_KEY_DOWN);
+    if (hProcess) {
+        TerminateProcess(hProcess, 0);
+    }
+
+    CloseHandle(hThread);
+    if (hwnd) {
+        SaveWindowPlacement(hwnd);
+        UnregisterHotKey(hwnd, F4_KEY_DOWN);
+    }
     return 0;
 }

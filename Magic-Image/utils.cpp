@@ -1,4 +1,5 @@
 ﻿#include "utils.h"
+#include "capture-screen.h"
 
 void SaveWindowPlacement(HWND hwnd) {
     RECT rect;
@@ -44,11 +45,11 @@ void CheckAndCreateRegistryKey() {
 
     // 尝试打开注册表键
     LONG result = RegOpenKeyEx(
-        HKEY_CURRENT_USER,  // 根键
-        keyPath,            // 键路径
-        0,                  // 保留值，通常为0
-        KEY_READ,           // 访问权限
-        &hKey               // 输出的键句柄
+      HKEY_CURRENT_USER,  // 根键
+      keyPath,            // 键路径
+      0,                  // 保留值，通常为0
+      KEY_READ,           // 访问权限
+      &hKey               // 输出的键句柄
     );
 
     if (result == ERROR_SUCCESS) {
@@ -57,15 +58,15 @@ void CheckAndCreateRegistryKey() {
     } else if (result == ERROR_FILE_NOT_FOUND) {
         // 键不存在，创建它
         LONG createResult = RegCreateKeyEx(
-            HKEY_CURRENT_USER,  // 根键
-            keyPath,            // 键路径
-            0,                  // 保留值，通常为0
-            NULL,               // 类名，通常为NULL
-            0,                  // 创建选项，通常为0
-            KEY_WRITE,          // 访问权限
-            NULL,               // 安全属性
-            &hKey,              // 输出的键句柄
-            NULL                // 可选的创建标志
+          HKEY_CURRENT_USER,  // 根键
+          keyPath,            // 键路径
+          0,                  // 保留值，通常为0
+          NULL,               // 类名，通常为NULL
+          0,                  // 创建选项，通常为0
+          KEY_WRITE,          // 访问权限
+          NULL,               // 安全属性
+          &hKey,              // 输出的键句柄
+          NULL                // 可选的创建标志
         );
 
         if (createResult == ERROR_SUCCESS) {
@@ -116,10 +117,10 @@ void HotKeyChangeWindowSize(HWND hwnd, WPARAM wParam) {
 
     if (wParam == 'W' || wParam == 'S' || wParam == 'A' || wParam == 'D') {
         SetWindowPos(
-            hwnd,
-            NULL,
-            rect.left, rect.top, rect.right, rect.bottom,
-            SWP_NOZORDER
+          hwnd,
+          NULL,
+          rect.left, rect.top, rect.right, rect.bottom,
+          SWP_NOZORDER
         );
     }
 }
@@ -154,10 +155,10 @@ void HotKeyMoveWindow(HWND hwnd, WPARAM wParam) {
 
     if (wParam == VK_UP || wParam == VK_DOWN || wParam == VK_LEFT || wParam == VK_RIGHT) {
         SetWindowPos(
-            hwnd,
-            NULL,
-            rect.left, rect.top, rect.right, rect.bottom,
-            SWP_NOZORDER
+          hwnd,
+          NULL,
+          rect.left, rect.top, rect.right, rect.bottom,
+          SWP_NOZORDER
         );
     }
 }
