@@ -12,43 +12,8 @@
 #include "capture-screen.h"
 
 
-static std::wstring text = L"Hello, Windows";
+static std::string text = "Hello, Windows";
 
-
-void PaintText(HDC hdc, std::wstring text) {
-    HFONT hFont = CreateFont(
-      30,                             // 字体高度
-      0,                              // 字体宽度
-      0,                              // 字体倾斜角度
-      0,                              // 字体倾斜方向
-      FW_NORMAL,                      // 字体重量
-      FALSE,                          // 斜体
-      FALSE,                          // 下划线
-      FALSE,                          // 删除线
-      DEFAULT_CHARSET,                // 字符集
-      OUT_PS_ONLY_PRECIS,             // 输出精度
-      CLIP_STROKE_PRECIS,             // 剪辑精度
-      PROOF_QUALITY,                  // 输出质量
-      DEFAULT_PITCH | FF_SWISS,       // 字体类别
-      L"CodeNewRoman Nerd Font Mono"  // 字体名称
-    );
-
-    // 选择字体到设备上下文
-    HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
-
-    // 设置文本颜色
-    SetTextColor(hdc, RGB(255, 255, 255));  // 黑色
-    // 设置背景颜色
-    SetBkMode(hdc, TRANSPARENT);  // 透明背景
-
-    // 绘制文本
-    TextOut(hdc, 50, 40, text.c_str(), text.length());
-
-    // 恢复旧字体
-    SelectObject(hdc, hOldFont);
-    // 删除创建的字体
-    DeleteObject(hFont);
-}
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
@@ -77,9 +42,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     LONG height = rect.bottom - rect.top;
                     LONG x = rect.left;
                     LONG y = rect.top + height;
-
                     std::string path = CaptureScreen(x, y, width, height);
-                    text = Utf8ToUtf16(Post(path));
+                    text = Post(path);
                 }
             }
             break;
@@ -141,9 +105,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             FillRect(hdc, &rc, hBrush);                         // 用黑色填充窗口
             DeleteObject(hBrush);                               // 删除画刷以释放资源
 
-            // SetTextColor(hdc, RGB(0, 0, 0));  // 设置文本颜色为黑色
-            // SetBkMode(hdc, TRANSPARENT);      // 透明背景
-            // TextOut(hdc, 10, 10, text.c_str(), text.length());
             PaintText(hdc, text);
             EndPaint(hwnd, &ps);
             return 0;
@@ -292,6 +253,7 @@ int WINAPI WinMain(
 ) {
 
     HWND hwnd = CreateMainWindow();
+
 #ifdef _DEBUG
     SetupConsole();
 #endif

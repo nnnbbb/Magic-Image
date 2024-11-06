@@ -12,14 +12,14 @@ bool SetClipboardText(const std::string& text) {
     EmptyClipboard();
 
     // 分配全局内存以存放文本
-    HGLOBAL hGlob = GlobalAlloc(GMEM_MOVEABLE, text.size() + 1);
-    if (hGlob) {
+    HGLOBAL glob = GlobalAlloc(GMEM_MOVEABLE, text.size() + 1);
+    if (glob) {
         // 将文本复制到全局内存
-        memcpy(GlobalLock(hGlob), text.c_str(), text.size() + 1);
-        GlobalUnlock(hGlob);
+        memcpy(GlobalLock(glob), text.c_str(), text.size() + 1);
+        GlobalUnlock(glob);
 
         // 设置剪贴板数据
-        SetClipboardData(CF_TEXT, hGlob);
+        SetClipboardData(CF_TEXT, glob);
     }
 
     CloseClipboard();
@@ -46,7 +46,7 @@ String ParseJson(std::string& jsonString) {
     // 遍历 data 数组并获取 text 字段
     for (const auto& item : dataArray) {
         if (item.isMember("text")) {
-            combinedText += item["text"].asString() + "\n";  // 组合文本
+            combinedText += item["text"].asString() + "\r\n";  // 组合文本
         }
     }
     String str = Utf8ToLocalCP(combinedText);
@@ -58,26 +58,23 @@ String ParseJson(std::string& jsonString) {
     return str;
 }
 
-String Post(const std::string& file_path) {
+String Post(const std::string& filePath) {
     // 创建 HTTP 客户端
     httplib::Client cli("http://127.0.0.1:3001");  // 替换为你的服务器地址
 
-    // 要上传的文件路径
-
     // 读取文件内容
-    std::ifstream file(file_path, std::ios::binary);
+    std::ifstream file(filePath, std::ios::binary);
     if (!file) {
-        std::cerr << "无法打开文件: " << file_path << std::endl;
+        std::cerr << "无法打开文件: " << filePath << std::endl;
     }
 
-    // 将文件内容读入到一个字符串中
     std::ostringstream oss;
     oss << file.rdbuf();
-    std::string file_content = oss.str();
+    std::string fileContent = oss.str();
 
     // 创建 multipart/form-data 请求
     httplib::MultipartFormDataItems items = {
-      {"img", file_content, "image.jpg", "image/jpeg"}  // 文件字段
+      {"img", fileContent, "image.jpg", "image/jpeg"}  // 文件字段
     };
 
     // 发送 POST 请求
@@ -87,8 +84,7 @@ String Post(const std::string& file_path) {
     if (res) {
         return ParseJson(res->body);
     } else {
-        std::cout << "status: " << res->status << std::endl;
         std::cerr << "请求失败: " << res.error() << std::endl;
     }
-    return 0;
+    return String();
 }

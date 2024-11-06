@@ -15,6 +15,9 @@
 #include <algorithm>
 #include <shellapi.h>
 
+#ifndef UTILS_H_
+#define UTILS_H_
+
 typedef unsigned long u32;
 typedef unsigned long long u64;
 typedef unsigned char u8;
@@ -62,3 +65,17 @@ void SetWindowUnTop(HWND hwnd);
 void SetupConsole();
 
 void DestroyConsole();
+
+void PaintText(HDC hdc, std::string text);
+
+#define FN_ADDRESS(func) \
+    std::cout << "Function address of " #func ": " << "0x" << (void*)func << std::endl;
+
+#define NOT_NULL(value)                                 \
+    do {                                                \
+        if (value == NULL) {                            \
+            throw std::runtime_error("Handle is NULL"); \
+        }                                               \
+    } while (0)
+
+#endif  // !UTILS_H_

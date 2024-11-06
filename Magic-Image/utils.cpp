@@ -75,7 +75,14 @@ void CheckAndCreateRegistryKey() {
             // 在此可以设置值，如果需要的话
             const wchar_t* valueName = L"MyValue";
             const wchar_t* valueData = L"Hello, Registry!";
-            RegSetValueEx(hKey, valueName, 0, REG_SZ, (const BYTE*)valueData, (wcslen(valueData) + 1) * sizeof(wchar_t));
+            RegSetValueEx(
+              hKey,
+              valueName,
+              0,
+              REG_SZ,
+              (const BYTE*)valueData,
+              (wcslen(valueData) + 1) * sizeof(wchar_t)
+            );
 
             RegCloseKey(hKey);  // 关闭句柄
         } else {
@@ -182,6 +189,40 @@ void HotKeyWindowTop(HWND hwnd, WPARAM wParam) {
             isTop = true;
         }
     }
+}
+
+void PaintText(HDC hdc, std::string text) {
+    int x = 50, y = 40, height = 30;  // 初始绘制位置
+    HFONT font = CreateFont(
+      height,                         // 字体高度
+      0,                              // 字体宽度
+      0,                              // 字体倾斜角度
+      0,                              // 字体倾斜方向
+      FW_NORMAL,                      // 字体重量
+      FALSE,                          // 斜体
+      FALSE,                          // 下划线
+      FALSE,                          // 删除线
+      DEFAULT_CHARSET,                // 字符集
+      OUT_PS_ONLY_PRECIS,             // 输出精度
+      CLIP_STROKE_PRECIS,             // 剪辑精度
+      PROOF_QUALITY,                  // 输出质量
+      DEFAULT_PITCH | FF_SWISS,       // 字体类别
+      L"CodeNewRoman Nerd Font Mono"  // 使用微软雅黑
+    );
+
+    SelectObject(hdc, font);
+    SetBkMode(hdc, TRANSPARENT);            // 透明背景
+    SetTextColor(hdc, RGB(255, 255, 255));  // 黑色
+
+    std::stringstream ss(text);
+    std::string line;
+    int i = 0;
+    while (std::getline(ss, line)) {
+        TextOutA(hdc, x, y + i * height, line.c_str(), line.length());
+        i++;
+    }
+
+    DeleteObject(font);
 }
 
 FILE* stdinNew = nullptr;

@@ -1,97 +1,54 @@
 ﻿#include "capture-screen.h"
 
-void SavePng(const char *filename, int width, int height, unsigned char *data) {
-    FILE *fp = fopen(filename, "wb");
-    if (!fp) {
-        fprintf(stderr, "Could not open file %s for writing\n", filename);
-        return;
-    }
-
-    png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    if (!png) {
-        fclose(fp);
-        return;
-    }
-
-    png_infop info = png_create_info_struct(png);
-    if (!info) {
-        png_destroy_write_struct(&png, (png_infopp)NULL);
-        fclose(fp);
-        return;
-    }
-
-    if (setjmp(png_jmpbuf(png))) {
-        png_destroy_write_struct(&png, &info);
-        fclose(fp);
-        return;
-    }
-
-    png_init_io(png, fp);
-    png_set_IHDR(
-      png,
-      info,
-      width,
-      height,
-      8,
-      PNG_COLOR_TYPE_RGB,
-      PNG_INTERLACE_NONE,
-      PNG_COMPRESSION_TYPE_DEFAULT,
-      PNG_FILTER_TYPE_DEFAULT
-    );
-    png_write_info(png, info);
-
-    // 上下翻转图像数据并写入 PNG
-    for (int y = height - 1; y >= 0; y--) {
-        png_write_row(png, data + (y * width * 3));
-    }
-
-    png_write_end(png, NULL);
-    png_destroy_write_struct(&png, &info);
-    fclose(fp);
-}
-
 std::string CaptureScreen(int x, int y, int w, int h) {
     // 获取屏幕的设备上下文
-    HDC hdcScreen = GetDC(NULL);
-    int width = GetDeviceCaps(hdcScreen, HORZRES);
-    int height = GetDeviceCaps(hdcScreen, VERTRES);
+    HDC hdc = GetDC(NULL);
 
     // 创建一个与屏幕相同大小的位图
-    HDC hdcMem = CreateCompatibleDC(hdcScreen);
-    HBITMAP hBitmap = CreateCompatibleBitmap(hdcScreen, w, h);
-    SelectObject(hdcMem, hBitmap);
+    HDC hdcMem = CreateCompatibleDC(hdc);
+    HBITMAP bitmap = CreateCompatibleBitmap(hdc, w, h);
+    SelectObject(hdcMem, bitmap);
 
     // 从屏幕复制图像到位图
-    BitBlt(hdcMem, 0, 0, w, h, hdcScreen, x, y, SRCCOPY);
+    BitBlt(hdcMem, 0, 0, w, h, hdc, x, y, SRCCOPY);
 
     // 获取位图数据
     BITMAP bmp;
-    GetObject(hBitmap, sizeof(BITMAP), &bmp);
-    char *data = (char *)malloc(bmp.bmWidthBytes * bmp.bmHeight);
-    GetBitmapBits(hBitmap, bmp.bmWidthBytes * bmp.bmHeight, data);
+    GetObject(bitmap, sizeof(BITMAP), &bmp);
+    char *data = (char *)malloc((u64)bmp.bmWidth * (u64)bmp.bmHeight * 4);  // 32位位图数据
+    NOT_NULL(data);
+    GetBitmapBits(bitmap, bmp.bmWidthBytes * bmp.bmHeight, data);
+    std::vector<unsigned char> image((u64)w * (u64)h * 4);
 
-    // 将数据转换为 RGB 格式
-    unsigned char *rgb = (unsigned char *)malloc(w * h * 3);
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            int pixel = y * bmp.bmWidthBytes + x * 4;  // 32位位图
-            int index = (h - 1 - y) * w * 3 + x * 3;   // PNG 需要倒转行
-            rgb[index + 0] = data[pixel + 2];          // R
-            rgb[index + 1] = data[pixel + 1];          // G
-            rgb[index + 2] = data[pixel + 0];          // B
+    for (size_t row = 0; row < h; row++) {
+        for (size_t col = 0; col < w; col++) {
+
+            size_t pixel = row * bmp.bmWidth * 4 + col * 4;  // 32位位图偏移量
+            size_t index = row * w * 4 + col * 4;
+
+            image[index + 0] = data[pixel + 2];  // R
+            image[index + 1] = data[pixel + 1];  // G
+            image[index + 2] = data[pixel + 0];  // B
+            image[index + 3] = 255;              // A
         }
     }
 
-    // 保存为 PNG 文件
     std::string filename = "screenshot.png";
-    SavePng(filename.c_str(), w, h, rgb);
+    std::vector<unsigned char> png;
+    unsigned error = lodepng::encode(png, image, w, h);
 
-    // 清理资源
+    if (error) {
+        std::cout << "PNG encoding error " << error << ": " << lodepng_error_text(error) << std::endl;
+    }
+
+    lodepng::save_file(png, filename);
+
     free(data);
-    free(rgb);
-    DeleteObject(hBitmap);
+    DeleteObject(bitmap);
     DeleteDC(hdcMem);
-    ReleaseDC(NULL, hdcScreen);
+    ReleaseDC(NULL, hdc);
+
+    // 返回文件路径
     std::filesystem::path path = std::filesystem::current_path();
     return path.string() + "\\" + filename;
 }
