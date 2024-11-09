@@ -14,6 +14,7 @@
 #include <filesystem>
 #include <algorithm>
 #include <shellapi.h>
+#include <dwmapi.h>
 
 #ifndef UTILS_H_
 #define UTILS_H_
@@ -42,9 +43,28 @@ WString Utf8ToUtf16(const char* str);
 String Utf8ToLocalCP(const String& str);
 String Utf8ToLocalCP(const char* str);
 
+typedef struct _RECT {
+    LONG left;
+    LONG top;
+    LONG right;
+    LONG bottom;
+    LONG width;
+    LONG height;
+} TRECT, *PTRECT;
+
 const std::wstring REGISTRY_KEY = L"hkcu\\MagicImage";
 
 constexpr auto F4_KEY_DOWN = 1;
+constexpr auto VK_KEY_3_DOWN = 3;
+constexpr auto VK_KEY_4_DOWN = 4;
+constexpr auto VK_KEY_5_DOWN = 5;
+constexpr auto VK_KEY_3 = '3';
+constexpr auto VK_KEY_4 = '4';
+constexpr auto VK_KEY_5 = '5';
+
+bool SetClipboardText(const std::string& text);
+
+void DrawRect(HWND hwnd, HDC hdc, COLORREF solidColor = 0);
 
 void SaveWindowPlacement(HWND hwnd);
 
@@ -66,7 +86,9 @@ void SetupConsole();
 
 void DestroyConsole();
 
-void PaintText(HDC hdc, std::string text);
+void PaintText(HDC hdc, std::string text, int windowWidth);
+
+TRECT GetWindowAttributeRect(HWND hwnd);
 
 #define FN_ADDRESS(func) \
     std::cout << "Function address of " #func ": " << "0x" << (void*)func << std::endl;

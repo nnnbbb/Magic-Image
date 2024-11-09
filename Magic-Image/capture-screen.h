@@ -1,5 +1,4 @@
 ﻿#include <windows.h>
-#include <png.h>
 #include <iostream>
 #include <fstream>
 #include <filesystem>

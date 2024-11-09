@@ -1,6 +1,5 @@
 ﻿#include <windows.h>
 #include <windowsx.h>
-#include <Dwmapi.h>
 #include <iostream>
 #include <dwmapi.h>
 #include <string>
@@ -24,26 +23,36 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
     switch (uMsg) {
         case WM_HOTKEY: {
-            if (wParam == F4_KEY_DOWN) {
+            if (wParam == VK_KEY_3_DOWN || wParam == VK_KEY_4_DOWN || wParam == VK_KEY_5_DOWN) {
+
                 visible = !visible;
                 ShowWindow(hwnd, visible ? SW_SHOW : SW_HIDE);
                 visible ? SetWindowTop(hwnd) : SetWindowUnTop(hwnd);
 
                 if (visible == false) {
-                    RECT rect;
+                    TRECT rect = GetWindowAttributeRect(hwnd);
 
-                    DwmGetWindowAttribute(
-                      hwnd,
-                      DWMWA_EXTENDED_FRAME_BOUNDS,
-                      &rect,
-                      sizeof(rect)
-                    );
-                    LONG width = rect.right - rect.left;
-                    LONG height = rect.bottom - rect.top;
+                    LONG width = rect.width;
+                    LONG height = rect.height;
                     LONG x = rect.left;
                     LONG y = rect.top + height;
+                    if (wParam == VK_KEY_3_DOWN) {
+                        y = rect.top;
+                    }
                     std::string path = CaptureScreen(x, y, width, height);
-                    text = Post(path);
+                    text = HttpPost(path);
+
+                    if (!text.empty()) {
+                        std::map<std::string, std::string> params = {{"content", text}};
+                        if (wParam == VK_KEY_4_DOWN) {
+                            text = HttpGet(params);
+                        }
+                        if (wParam == VK_KEY_5_DOWN) {
+                            params.insert({"no_cache", "True"});
+                            text = HttpGet(params);
+                        }
+                        SetClipboardText(text);
+                    }
                 }
             }
             break;
@@ -103,9 +112,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
             HBRUSH hBrush = CreateSolidBrush(RGB(24, 53, 94));  // 创建黑色画刷
             FillRect(hdc, &rc, hBrush);                         // 用黑色填充窗口
-            DeleteObject(hBrush);                               // 删除画刷以释放资源
+            DeleteObject(hBrush);
 
-            PaintText(hdc, text);
+            PaintText(hdc, text, rc.right - rc.left);
+            // 删除笔刷
+            DeleteObject(hBrush);
+
             EndPaint(hwnd, &ps);
             return 0;
         }
@@ -238,10 +250,13 @@ HWND CreateMainWindow() {
     // 置顶
     SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 
-    if (!RegisterHotKey(hwnd, F4_KEY_DOWN, 0, VK_F4)) {
+    if (!RegisterHotKey(hwnd, VK_KEY_3_DOWN, 0, VK_KEY_3) ||  // MOD_ALT
+        !RegisterHotKey(hwnd, VK_KEY_4_DOWN, 0, VK_KEY_4) ||
+        !RegisterHotKey(hwnd, VK_KEY_5_DOWN, 0, VK_KEY_5)) {
         MessageBox(NULL, L"Hotkey Registration Failed!", L"Error!", MB_ICONEXCLAMATION | MB_OK);
         return 0;
     }
+
     return hwnd;
 }
 
@@ -281,7 +296,9 @@ int WINAPI WinMain(
     CloseHandle(hThread);
     if (hwnd) {
         SaveWindowPlacement(hwnd);
-        UnregisterHotKey(hwnd, F4_KEY_DOWN);
+        UnregisterHotKey(hwnd, VK_KEY_3_DOWN);
+        UnregisterHotKey(hwnd, VK_KEY_4_DOWN);
+        UnregisterHotKey(hwnd, VK_KEY_5_DOWN);
     }
     return 0;
 }

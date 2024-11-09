@@ -39,6 +39,32 @@ RECT LoadWindowPlacement() {
     return rc;
 }
 
+// 将文本放入剪贴板
+bool SetClipboardText(const std::string& text) {
+    // 打开剪贴板
+    if (!OpenClipboard(nullptr)) {
+        std::cerr << "无法打开剪贴板" << std::endl;
+        return false;
+    }
+
+    // 清空剪贴板
+    EmptyClipboard();
+
+    // 分配全局内存以存放文本
+    HGLOBAL glob = GlobalAlloc(GMEM_MOVEABLE, text.size() + 1);
+    if (glob) {
+        // 将文本复制到全局内存
+        memcpy(GlobalLock(glob), text.c_str(), text.size() + 1);
+        GlobalUnlock(glob);
+
+        // 设置剪贴板数据
+        SetClipboardData(CF_TEXT, glob);
+    }
+
+    CloseClipboard();
+    return true;
+}
+
 void CheckAndCreateRegistryKey() {
     const wchar_t* keyPath = REGISTRY_KEY.c_str();  // 注册表路径
     HKEY hKey;
@@ -191,8 +217,8 @@ void HotKeyWindowTop(HWND hwnd, WPARAM wParam) {
     }
 }
 
-void PaintText(HDC hdc, std::string text) {
-    int x = 50, y = 40, height = 30;  // 初始绘制位置
+void PaintText(HDC hdc, std::string text, int windowWidth) {
+    int y = 30, height = 40;  // 初始绘制位置
     HFONT font = CreateFont(
       height,                         // 字体高度
       0,                              // 字体宽度
@@ -207,22 +233,57 @@ void PaintText(HDC hdc, std::string text) {
       CLIP_STROKE_PRECIS,             // 剪辑精度
       PROOF_QUALITY,                  // 输出质量
       DEFAULT_PITCH | FF_SWISS,       // 字体类别
-      L"CodeNewRoman Nerd Font Mono"  // 使用微软雅黑
+      L"CodeNewRoman Nerd Font Mono"  // 字体
     );
 
     SelectObject(hdc, font);
-    SetBkMode(hdc, TRANSPARENT);            // 透明背景
-    SetTextColor(hdc, RGB(255, 255, 255));  // 黑色
+    SetBkMode(hdc, TRANSPARENT);  // 透明背景
+    SetTextColor(hdc, RGB(255, 255, 255));
 
-    std::stringstream ss(text);
-    std::string line;
-    int i = 0;
-    while (std::getline(ss, line)) {
-        TextOutA(hdc, x, y + i * height, line.c_str(), line.length());
-        i++;
-    }
+    // 获取文本的宽度
+    SIZE textSize;
+    GetTextExtentPoint32A(hdc, text.c_str(), text.length(), &textSize);
+
+    // 计算水平居中的 x 坐标
+    int x = (windowWidth - textSize.cx) / 2;
+
+    // 绘制文本
+    TextOutA(hdc, x, y, text.c_str(), text.length());
 
     DeleteObject(font);
+}
+
+TRECT GetWindowAttributeRect(HWND hwnd) {
+    RECT rect;
+
+    DwmGetWindowAttribute(
+      hwnd,
+      DWMWA_EXTENDED_FRAME_BOUNDS,
+      &rect,
+      sizeof(rect)
+    );
+    LONG width = rect.right - rect.left;
+    LONG height = rect.bottom - rect.top;
+    LONG left = rect.left;
+    LONG top = rect.top;
+    LONG right = rect.right;
+    LONG bottom = rect.bottom;
+
+    TRECT trect = {left, top, right, bottom, width, height};
+    return trect;
+}
+
+void DrawRect(HWND hwnd, HDC hdc, COLORREF solidColor) {
+    // 设置边框颜色
+    HBRUSH hBrush = CreateSolidBrush(RGB(255, 0, 0));  // 边框为红色
+    TRECT trect = GetWindowAttributeRect(hwnd);
+    RECT rect = {trect.left, trect.top + trect.height, trect.right, trect.bottom};
+
+    // 绘制矩形边框
+    FrameRect(hdc, &rect, hBrush);
+
+    // 删除笔刷
+    DeleteObject(hBrush);
 }
 
 FILE* stdinNew = nullptr;

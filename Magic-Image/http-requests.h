@@ -5,4 +5,6 @@
 #include <httplib.h>
 
 
-std::string Post(const std::string& file_path);
+std::string HttpPost(const std::string& file_path);
+
+std::string HttpGet(const std::map<std::string, std::string>& params);
