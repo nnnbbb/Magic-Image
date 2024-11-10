@@ -40,17 +40,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                         y = rect.top;
                     }
                     std::string path = CaptureScreen(x, y, width, height);
-                    text = HttpPost(path);
 
+                    std::map<std::string, std::string> params = {{"content", text}};
+                    if (wParam == VK_KEY_4_DOWN) {
+                        text = HttpPost(path);
+                    }
+                    if (wParam == VK_KEY_5_DOWN) {
+                        text = HttpPost(path, true);
+                    }
                     if (!text.empty()) {
-                        std::map<std::string, std::string> params = {{"content", text}};
-                        if (wParam == VK_KEY_4_DOWN) {
-                            text = HttpGet(params);
-                        }
-                        if (wParam == VK_KEY_5_DOWN) {
-                            params.insert({"no_cache", "True"});
-                            text = HttpGet(params);
-                        }
                         SetClipboardText(text);
                     }
                 }
@@ -183,29 +181,29 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 }
 
 HANDLE hProcess;
-DWORD WINAPI ExecuteNodeScript(LPVOID lpParam) {
-    std::wstring nodePath = L"node.exe";
-    std::wstring directory = L"D:/code/PaddleOCR-json/api/node.js/test/";
-    std::wstring scriptPath = directory + L"app.js";
+DWORD WINAPI ExecutePythonScript(LPVOID lpParam) {
+    std::wstring pythonPath = L"py.exe";
+    std::wstring scriptPath = L"D:/code/Magic-Image/Magic-Image/api/python/gemma_api.py";
 
-    // 创建一个 SHELLEXECUTEINFO 结构体
+    std::filesystem::path path(scriptPath);
+    std::wstring directory = path.parent_path().wstring();
+
     SHELLEXECUTEINFO sei;
     ZeroMemory(&sei, sizeof(sei));
     sei.cbSize = sizeof(sei);
     sei.fMask = SEE_MASK_NOCLOSEPROCESS;  // 允许在执行后获得进程句柄
     sei.hwnd = NULL;
     sei.lpVerb = NULL;                      // 默认操作
-    sei.lpFile = nodePath.c_str();          // 可执行文件
+    sei.lpFile = pythonPath.c_str();        // 可执行文件
     sei.lpParameters = scriptPath.c_str();  // 传递的参数
     sei.lpDirectory = directory.c_str();    // 目录
     sei.nShow = SW_HIDE /* SW_SHOW */;      // 窗口显示方式
     sei.hInstApp = NULL;
-    // 执行 Node.js 程序
+
     if (ShellExecuteEx(&sei)) {
-        // 等待子进程结束
+
         hProcess = sei.hProcess;
         WaitForSingleObject(sei.hProcess, INFINITE);
-        // 关闭进程句柄
         CloseHandle(sei.hProcess);
     } else {
         std::cerr << "ShellExecuteEx failed (" << GetLastError() << ")." << std::endl;
@@ -260,6 +258,14 @@ HWND CreateMainWindow() {
     return hwnd;
 }
 
+
+void SendSigint(DWORD pid) {
+    AttachConsole(pid);
+    SetConsoleCtrlHandler(NULL, TRUE);
+    GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0);
+    FreeConsole();
+}
+
 int WINAPI WinMain(
   _In_ HINSTANCE hInstance,
   _In_opt_ HINSTANCE hPrevInstance,
@@ -273,7 +279,7 @@ int WINAPI WinMain(
     SetupConsole();
 #endif
 
-    HANDLE hThread = CreateThread(NULL, 0, ExecuteNodeScript, NULL, 0, NULL);
+    HANDLE hThread = CreateThread(NULL, 0, ExecutePythonScript, NULL, 0, NULL);
     if (hThread == NULL) {
         std::cerr << "CreateThread failed (" << GetLastError() << ")." << std::endl;
         return 1;
@@ -283,6 +289,7 @@ int WINAPI WinMain(
     while (GetMessage(&msg, NULL, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
+        DWORD processId = GetProcessId(hProcess);
     }
 
 #ifdef _DEBUG
@@ -290,7 +297,8 @@ int WINAPI WinMain(
 #endif
 
     if (hProcess) {
-        TerminateProcess(hProcess, 0);
+        DWORD processId = GetProcessId(hProcess);
+        SendSigint(processId);
     }
 
     CloseHandle(hThread);

@@ -1,10 +1,12 @@
 from base import g_cache, GPT
+import atexit
+from OCR import get_ocr
 from flask import Flask, request
 import os
 
 model = "gemma2:2b"
 gpt = GPT(model, "xx", "http://localhost:11434/v1/")
-
+ocr = get_ocr(r"D:/code/Magic-Image/PaddleOCR-json_v1.4.1/PaddleOCR-json.exe")
 script_dir = os.path.dirname(os.path.abspath(__file__))
 prompt_file = os.path.join(script_dir, 'prompt.json')
 
@@ -60,10 +62,32 @@ def index():
     r = repair(content, no_cache)
     print("repair ->", r, "before ->", content)
     return r
+  
+@app.route('/ocr', methods=['GET'])
+def ocr_get():
+    return '''
+            <form action="/ocr" method="POST" enctype="multipart/form-data">
+              <input type="file" name="img">
+              <button type="submit">Up</button>
+            </form>
+            '''
+
+@app.route('/ocr', methods=['POST'])
+def ocr_post():
+    no_cache = request.form.get('no_cache', 'False')
+    print("no_cache", type(no_cache), no_cache)
+
+    img = request.files.get('img', None)
+    content = ""
+    if img:
+        image_bytes = img.read()
+        res = ocr.runBytes(image_bytes)
+        for line in res["data"]:
+            content += line["text"]
+    r = repair(content, no_cache)
+    print("repair ->", r, "before ->", content)
+    return r
+
            
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5100)
-    # 非流式调用
-    # gpt_35_api(messages)
-    # 流式调用
-    # gpt_35_api_stream(messages)
