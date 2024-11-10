@@ -1,42 +1,21 @@
-from openai import OpenAI
+            
 from flask import Flask, request
-import os
-import json
-import atexit
+from base import g_cache, GPT
 from dotenv import load_dotenv
+import os
+app = Flask(__name__)
 
-load_dotenv()
+script_dir = os.path.dirname(os.path.abspath(__file__))
+dotenv_file = os.path.join(script_dir, '.env')
+
+load_dotenv(dotenv_file)
 api_key = os.getenv("API_KEY")
 base_url = os.getenv("BASE_URL")
 
-client = OpenAI(
-    api_key=api_key,
-    base_url=base_url,
-)
-
 model="gpt-3.5-turbo"
 model="gpt-4o-mini"
+gpt = GPT(model, api_key, base_url)
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-cache_file = os.path.join(script_dir, 'cache.json')
-g_cache = {}
-
-try:
-    with open(cache_file, 'r', encoding='utf-8') as f:
-        g_cache = json.load(f)
-except FileNotFoundError:
-    # 如果文件不存在, 将 g_cache 设为一个空字典
-    g_cache = {}
-
-def save_cache():
-    with open(cache_file, 'w', encoding='utf-8') as f:
-        json.dump(g_cache, f, ensure_ascii=False, indent=4)
-
-# 注册 exit 函数, 在程序退出时调用
-atexit.register(save_cache)
-
-
-app = Flask(__name__)
 messages = [
       {
         'role': 'user',
@@ -69,7 +48,7 @@ def repair(content: str, no_cache: bool):
     if content in g_cache and no_cache == False:
         return g_cache[content]
     
-    g_cache[content] = gpt_35_api(m)
+    g_cache[content] = gpt.gpt_35_api(m)
     return g_cache[content]
 
 @app.route('/', methods=['GET'])
@@ -82,23 +61,6 @@ def index():
     print("repair ->", r, "before ->", content)
     return r
 
-# 非流式响应
-def gpt_35_api(messages: list):
-    completion = client.chat.completions.create(model=model, messages=messages)
-    content = completion.choices[0].message.content
-    return content
-    
-
-def gpt_35_api_stream(messages: list):
-    stream = client.chat.completions.create(
-        model=model,
-        messages=messages,
-        stream=True,
-    )
-    for chunk in stream:
-        if chunk.choices[0].delta.content is not None:
-            print(chunk.choices[0].delta.content, end="")
-            
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5100)
     # 非流式调用
