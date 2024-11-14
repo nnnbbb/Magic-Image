@@ -75,7 +75,6 @@ def ocr_get():
 @app.route('/ocr', methods=['POST'])
 def ocr_post():
     no_cache = request.form.get('no_cache', 'False')
-    print("no_cache", type(no_cache), no_cache)
 
     img = request.files.get('img', None)
     content = ""

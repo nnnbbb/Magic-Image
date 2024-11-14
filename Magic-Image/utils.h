@@ -15,6 +15,9 @@
 #include <algorithm>
 #include <shellapi.h>
 #include <dwmapi.h>
+#include <httplib.h>
+#include "http-requests.h"
+
 
 #ifndef UTILS_H_
 #define UTILS_H_
@@ -61,6 +64,8 @@ constexpr auto VK_KEY_5_DOWN = 5;
 constexpr auto VK_KEY_3 = '3';
 constexpr auto VK_KEY_4 = '4';
 constexpr auto VK_KEY_5 = '5';
+
+String Ocr(HWND hwnd, WPARAM wParam);
 
 bool SetClipboardText(const std::string& text);
 

@@ -1,6 +1,39 @@
 ﻿#include "utils.h"
 #include "capture-screen.h"
 
+String Ocr(HWND hwnd, WPARAM wParam) {
+    TRECT rect = GetWindowAttributeRect(hwnd);
+
+    LONG width = rect.width;
+    LONG height = rect.height;
+    LONG x = rect.left;
+    LONG y = rect.top + height;
+    if (wParam == VK_KEY_3_DOWN) {
+        y = rect.top;
+    }
+    bool noCache = false;
+    if (wParam == VK_KEY_5_DOWN) {
+        noCache = true;
+    }
+    std::string path = CaptureScreen(x, y, width, height);
+
+    std::ifstream file(path, std::ios::binary);
+    if (!file) {
+        std::cerr << "无法打开文件: " << path << std::endl;
+    }
+
+    std::ostringstream oss;
+    oss << file.rdbuf();
+    std::string fileContent = oss.str();
+
+    httplib::MultipartFormDataItems items = {
+      {"img", fileContent, "image.jpg", "image/jpeg"},
+      {"no_cache", (noCache ? "True" : "False"), "", "application/json"}
+    };
+
+    return Post("/ocr", items);
+}
+
 void SaveWindowPlacement(HWND hwnd) {
     RECT rect;
     if (GetWindowRect(hwnd, &rect)) {

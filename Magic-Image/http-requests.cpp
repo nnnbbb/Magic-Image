@@ -26,32 +26,18 @@ String ParseJson(std::string& jsonString) {
     return str;
 }
 
-String HttpPost(
-  const std::string& filePath,
-  bool noCache
-) {
-    httplib::Client cli("http://127.0.0.1:5100");
+String Post(String path, httplib::MultipartFormDataItems formData) {
+    httplib::Client client("http://127.0.0.1:5100");
+    client.set_connection_timeout(2);
+    client.set_read_timeout(2);
 
-    std::ifstream file(filePath, std::ios::binary);
-    if (!file) {
-        std::cerr << "无法打开文件: " << filePath << std::endl;
-    }
-
-    std::ostringstream oss;
-    oss << file.rdbuf();
-    std::string fileContent = oss.str();
-
-    httplib::MultipartFormDataItems items = {
-      {"img", fileContent, "image.jpg", "image/jpeg"},
-      {"no_cache", (noCache ? "True" : "False"), "", "application/json"}
-    };
-
-    auto res = cli.Post("/ocr", items);
+    auto res = client.Post(path, formData);
 
     if (res) {
         if (res->status == 200) {
-            // std::cout << "Response body: " << res->body << std::endl;
-            return res->body;
+            std::string body = Utf8ToLocalCP(res->body);
+            std::cout << "Response body: " << body << std::endl;
+            return body;
         } else {
             std::cout << "Request failed, status code: " << res->status << std::endl;
         }

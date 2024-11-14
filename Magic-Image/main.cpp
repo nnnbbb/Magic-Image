@@ -30,24 +30,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 visible ? SetWindowTop(hwnd) : SetWindowUnTop(hwnd);
 
                 if (visible == false) {
-                    TRECT rect = GetWindowAttributeRect(hwnd);
-
-                    LONG width = rect.width;
-                    LONG height = rect.height;
-                    LONG x = rect.left;
-                    LONG y = rect.top + height;
-                    if (wParam == VK_KEY_3_DOWN) {
-                        y = rect.top;
-                    }
-                    std::string path = CaptureScreen(x, y, width, height);
-
-                    std::map<std::string, std::string> params = {{"content", text}};
-                    if (wParam == VK_KEY_4_DOWN) {
-                        text = HttpPost(path);
-                    }
-                    if (wParam == VK_KEY_5_DOWN) {
-                        text = HttpPost(path, true);
-                    }
+                    text = Ocr(hwnd, wParam);
                     if (!text.empty()) {
                         SetClipboardText(text);
                     }
@@ -122,7 +105,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         case WM_NCHITTEST: {
             LRESULT hit = DefWindowProc(hwnd, uMsg, wParam, lParam);
             if (hit == HTCLIENT) {
-                POINT pt = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+                pt = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
                 ScreenToClient(hwnd, &pt);
 
                 RECT rc;
@@ -156,7 +139,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 wPos.length = sizeof(wPos);
                 GetWindowPlacement(hwnd, &wPos);
                 if (wPos.showCmd != SW_SHOWMAXIMIZED) {
-                    RECT borderThickness;
                     SetRectEmpty(&borderThickness);
                     AdjustWindowRectEx(
                       &borderThickness,
@@ -289,7 +271,6 @@ int WINAPI WinMain(
     while (GetMessage(&msg, NULL, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
-        DWORD processId = GetProcessId(hProcess);
     }
 
 #ifdef _DEBUG
