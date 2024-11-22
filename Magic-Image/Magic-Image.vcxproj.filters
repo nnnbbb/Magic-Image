@@ -33,6 +33,9 @@
     <ClCompile Include="string.utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="context-menu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="http-requests.h">
@@ -42,6 +45,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="context-menu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

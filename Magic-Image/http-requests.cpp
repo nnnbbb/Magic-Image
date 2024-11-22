@@ -46,7 +46,7 @@ String Post(String path, httplib::MultipartFormDataItems formData) {
         std::cout << "Request failed, error code: " << err << std::endl;
     }
 
-    return String();
+    return formData.at(0).content;
 }
 
 

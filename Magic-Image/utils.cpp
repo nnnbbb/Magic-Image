@@ -50,9 +50,9 @@ void SaveWindowPlacement(HWND hwnd) {
     }
 }
 
-RECT LoadWindowPlacement() {
+TRECT LoadWindowPlacement() {
     HKEY hKey;
-    RECT rc{};
+    TRECT rc = {};
     if (RegOpenKeyEx(HKEY_CURRENT_USER, REGISTRY_KEY.c_str(), 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
         DWORD posX, posY, width, height;
         DWORD size = sizeof(posX);
@@ -64,8 +64,8 @@ RECT LoadWindowPlacement() {
             rc.left = posX;
             rc.top = posY;
 
-            rc.right = width;
-            rc.bottom = height;
+            rc.width = width;
+            rc.height = height;
         }
         RegCloseKey(hKey);
     }
@@ -317,6 +317,39 @@ void DrawRect(HWND hwnd, HDC hdc, COLORREF solidColor) {
 
     // 删除笔刷
     DeleteObject(hBrush);
+}
+
+
+BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
+    DWORD processId = 0;
+    GetWindowThreadProcessId(hwnd, &processId);
+
+    auto targetProcessData = reinterpret_cast<std::pair<DWORD, HWND*>*>(lParam);
+
+    if (processId == targetProcessData->first) {
+        *(targetProcessData->second) = hwnd;
+        return FALSE;  // 停止枚举
+    }
+
+    return TRUE;
+}
+
+HWND GetHwndFromProcess(HANDLE hProcess) {
+    DWORD processId = GetProcessId(hProcess);
+    if (processId == 0) {
+        std::cerr << "Failed to get process ID." << std::endl;
+        return nullptr;
+    }
+
+    HWND hwnd = nullptr;
+
+    // 将目标进程 ID 和句柄指针打包成一个结构
+    std::pair<DWORD, HWND*> processData = {processId, &hwnd};
+
+    // 枚举所有顶层窗口
+    EnumWindows(EnumWindowsProc, reinterpret_cast<LPARAM>(&processData));
+
+    return hwnd;
 }
 
 FILE* stdinNew = nullptr;

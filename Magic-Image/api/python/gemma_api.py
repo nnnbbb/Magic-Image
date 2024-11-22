@@ -1,4 +1,4 @@
-from base import g_cache, GPT
+from base import g_cache, GPT, str_to_bool
 import atexit
 from OCR import get_ocr
 from flask import Flask, request
@@ -28,7 +28,7 @@ messages = [
 for original, modified in g_prompt.items():
     messages.append({
         "role": "user",
-        "content": f"{original}"
+        "content": f'''sentence: "{original}"'''
     })
     messages.append({
         "role": "assistant",
@@ -74,7 +74,7 @@ def ocr_get():
 
 @app.route('/ocr', methods=['POST'])
 def ocr_post():
-    no_cache = request.form.get('no_cache', 'False')
+    no_cache = request.form.get("no_cache", False, str_to_bool)
 
     img = request.files.get('img', None)
     content = ""

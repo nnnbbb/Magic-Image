@@ -41,3 +41,9 @@ class GPT:
         for chunk in stream:
             if chunk.choices[0].delta.content is not None:
                 print(chunk.choices[0].delta.content, end="")
+
+def str_to_bool(s):
+    if s in {"True", "False"}:
+        return eval(s)
+    else:
+        raise ValueError(f"Invalid boolean string: {s}")

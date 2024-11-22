@@ -9,10 +9,11 @@
 #include "utils.h"
 #include "http-requests.h"
 #include "capture-screen.h"
+#include "context-menu.h"
 
 
 static std::string text = "Hello, Windows";
-
+static MenuContext menuContext;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
@@ -80,6 +81,22 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             ReleaseCapture();
             return 0;
         }
+        case WM_RBUTTONUP: {
+            // 获取鼠标位置
+            POINT pt;
+            GetCursorPos(&pt);
+
+            HMENU hMenu = menuContext.CreateMenu();
+            TrackPopupMenu(hMenu, TPM_RIGHTBUTTON, pt.x, pt.y, 0, hwnd, NULL);
+
+            DestroyMenu(hMenu);
+            break;
+        }
+        case WM_COMMAND: {
+            menuContext.HandleMenuCommand(wParam);
+            break;
+        }
+
         case WM_DESTROY: {
             PostQuitMessage(0);
             return 0;
@@ -185,8 +202,8 @@ DWORD WINAPI ExecutePythonScript(LPVOID lpParam) {
     if (ShellExecuteEx(&sei)) {
 
         hProcess = sei.hProcess;
-        WaitForSingleObject(sei.hProcess, INFINITE);
-        CloseHandle(sei.hProcess);
+        WaitForSingleObject(hProcess, INFINITE);
+        CloseHandle(hProcess);
     } else {
         std::cerr << "ShellExecuteEx failed (" << GetLastError() << ")." << std::endl;
         return 1;
@@ -195,9 +212,7 @@ DWORD WINAPI ExecutePythonScript(LPVOID lpParam) {
     return 0;
 }
 
-HWND CreateMainWindow() {
-    const wchar_t CLASS_NAME[] = L"Sample Window Class";
-
+HWND CreateMainWindow(const wchar_t CLASS_NAME[] = L"Sample Window Class") {
     WNDCLASS wc = {};
     wc.lpfnWndProc = WindowProc;
     wc.hInstance = GetModuleHandle(NULL);
@@ -207,14 +222,15 @@ HWND CreateMainWindow() {
         std::cerr << "Failed to register window class." << std::endl;
         return 0;  // 确保类注册成功
     }
-    RECT rc = LoadWindowPlacement();
+    CheckAndCreateRegistryKey();
+    TRECT rc = LoadWindowPlacement();
 
     HWND hwnd = CreateWindowEx(
       WS_EX_TOOLWINDOW,
       CLASS_NAME,
       L"",
       WS_POPUP | WS_SIZEBOX | WS_VISIBLE,  // 修改窗口样式以允许调整大小但没有标题栏
-      rc.left, rc.top, rc.right, rc.bottom,
+      rc.left, rc.top, rc.width, rc.height,
       NULL,
       NULL,
       wc.hInstance,
@@ -226,7 +242,6 @@ HWND CreateMainWindow() {
         return 0;
     }
 
-    CheckAndCreateRegistryKey();
     // 置顶
     SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 
@@ -262,6 +277,7 @@ int WINAPI WinMain(
 #endif
 
     HANDLE hThread = CreateThread(NULL, 0, ExecutePythonScript, NULL, 0, NULL);
+
     if (hThread == NULL) {
         std::cerr << "CreateThread failed (" << GetLastError() << ")." << std::endl;
         return 1;
@@ -269,6 +285,9 @@ int WINAPI WinMain(
 
     MSG msg = {};
     while (GetMessage(&msg, NULL, 0, 0)) {
+        if (hProcess && menuContext.pythonTerminalHwnd == 0) {
+            menuContext.pythonTerminalHwnd = GetHwndFromProcess(hProcess);
+        }
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }

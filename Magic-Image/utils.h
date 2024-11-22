@@ -46,7 +46,7 @@ WString Utf8ToUtf16(const char* str);
 String Utf8ToLocalCP(const String& str);
 String Utf8ToLocalCP(const char* str);
 
-typedef struct _RECT {
+typedef struct _TRECT {
     LONG left;
     LONG top;
     LONG right;
@@ -73,7 +73,7 @@ void DrawRect(HWND hwnd, HDC hdc, COLORREF solidColor = 0);
 
 void SaveWindowPlacement(HWND hwnd);
 
-RECT LoadWindowPlacement();
+TRECT LoadWindowPlacement();
 
 void CheckAndCreateRegistryKey();
 
@@ -94,6 +94,10 @@ void DestroyConsole();
 void PaintText(HDC hdc, std::string text, int windowWidth);
 
 TRECT GetWindowAttributeRect(HWND hwnd);
+
+BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam);
+
+HWND GetHwndFromProcess(HANDLE hProcess);
 
 #define FN_ADDRESS(func) \
     std::cout << "Function address of " #func ": " << "0x" << (void*)func << std::endl;
