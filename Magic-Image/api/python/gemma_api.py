@@ -82,7 +82,7 @@ def ocr_post():
         image_bytes = img.read()
         res = ocr.runBytes(image_bytes)
         for line in res["data"]:
-            content += line["text"]
+            content += str(line["text"])
     r = repair(content, no_cache)
     print("repair ->", r, "before ->", content)
     return r

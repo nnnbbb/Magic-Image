@@ -98,6 +98,44 @@ bool SetClipboardText(const std::string& text) {
     return true;
 }
 
+void SendCtrlC() {
+    keybd_event(VK_CONTROL, 0, 0, 0);
+    keybd_event('C', 0, 0, 0);
+
+    keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
+    keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
+}
+
+// 将文本放入剪贴板
+String GetClipboardText() {
+    SendCtrlC();
+    Sleep(300);
+
+    if (!OpenClipboard(nullptr)) {
+        return "Failed to open clipboard";
+    }
+
+    HANDLE hData = GetClipboardData(CF_TEXT);  // CF_TEXT 表示 ANSI 文本格式
+    if (hData == nullptr) {
+        CloseClipboard();
+        return "No clipboard data available";
+    }
+
+    char* pszText = static_cast<char*>(GlobalLock(hData));
+    if (pszText == nullptr) {
+        CloseClipboard();
+        return "Failed to lock clipboard data";
+    }
+
+    std::string clipboardText(pszText);
+
+    GlobalUnlock(hData);
+    CloseClipboard();
+
+    return clipboardText;
+}
+
+
 void CheckAndCreateRegistryKey() {
     const wchar_t* keyPath = REGISTRY_KEY.c_str();  // 注册表路径
     HKEY hKey;
@@ -250,7 +288,7 @@ void HotKeyWindowTop(HWND hwnd, WPARAM wParam) {
     }
 }
 
-void PaintText(HDC hdc, std::string text, int windowWidth) {
+void PaintText(HDC hdc, std::string text, int windowWidth, bool center, bool newline) {
     int y = 30, height = 40;  // 初始绘制位置
     HFONT font = CreateFont(
       height,                         // 字体高度
@@ -277,12 +315,22 @@ void PaintText(HDC hdc, std::string text, int windowWidth) {
     SIZE textSize;
     GetTextExtentPoint32A(hdc, text.c_str(), text.length(), &textSize);
 
-    // 计算水平居中的 x 坐标
-    int x = (windowWidth - textSize.cx) / 2;
+    int x = 10;
+    if (center) {
+        x = (windowWidth - textSize.cx) / 2;
+    }
 
-    // 绘制文本
-    TextOutA(hdc, x, y, text.c_str(), text.length());
-
+    if (newline) {
+        std::stringstream ss(text);
+        std::string line;
+        int i = 0;
+        while (std::getline(ss, line)) {
+            TextOutA(hdc, x, y + i * height, line.c_str(), line.length());
+            i++;
+        }
+    } else {
+        TextOutA(hdc, x, y, text.c_str(), text.length());
+    }
     DeleteObject(font);
 }
 

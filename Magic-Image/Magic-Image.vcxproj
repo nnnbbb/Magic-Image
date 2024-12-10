@@ -36,6 +36,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="capture-screen.cpp" />
+    <ClCompile Include="card.cpp" />
     <ClCompile Include="context-menu.cpp" />
     <ClCompile Include="http-requests.cpp" />
     <ClCompile Include="main.cpp" />
@@ -44,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="capture-screen.h" />
+    <ClInclude Include="card.h" />
     <ClInclude Include="context-menu.h" />
     <ClInclude Include="http-requests.h" />
     <ClInclude Include="utils.h" />

@@ -248,3 +248,5 @@ ModelManifest.xml
 .fake/
 **/.env
 **/__pycache__
+PaddleOCR-json_v1.4.1/
+**/*.json

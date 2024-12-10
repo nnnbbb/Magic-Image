@@ -17,6 +17,7 @@
 #include <dwmapi.h>
 #include <httplib.h>
 #include "http-requests.h"
+#include <curl/curl.h>
 
 
 #ifndef UTILS_H_
@@ -58,9 +59,13 @@ typedef struct _TRECT {
 const std::wstring REGISTRY_KEY = L"hkcu\\MagicImage";
 
 constexpr auto F4_KEY_DOWN = 1;
+constexpr auto VK_KEY_2_DOWN = 2;
 constexpr auto VK_KEY_3_DOWN = 3;
 constexpr auto VK_KEY_4_DOWN = 4;
 constexpr auto VK_KEY_5_DOWN = 5;
+constexpr auto VK_KEY_F12_DOWN = 6;
+
+constexpr auto VK_KEY_2 = '2';
 constexpr auto VK_KEY_3 = '3';
 constexpr auto VK_KEY_4 = '4';
 constexpr auto VK_KEY_5 = '5';
@@ -68,6 +73,8 @@ constexpr auto VK_KEY_5 = '5';
 String Ocr(HWND hwnd, WPARAM wParam);
 
 bool SetClipboardText(const std::string& text);
+
+String GetClipboardText();
 
 void DrawRect(HWND hwnd, HDC hdc, COLORREF solidColor = 0);
 
@@ -91,7 +98,7 @@ void SetupConsole();
 
 void DestroyConsole();
 
-void PaintText(HDC hdc, std::string text, int windowWidth);
+void PaintText(HDC hdc, std::string text, int windowWidth, bool center = false, bool newline = false);
 
 TRECT GetWindowAttributeRect(HWND hwnd);
 

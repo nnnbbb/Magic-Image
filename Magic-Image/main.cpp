@@ -10,10 +10,12 @@
 #include "http-requests.h"
 #include "capture-screen.h"
 #include "context-menu.h"
+#include "card.h"
 
 
 static std::string text = "Hello, Windows";
 static MenuContext menuContext;
+static bool shortcutKey = true;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
@@ -24,8 +26,19 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
     switch (uMsg) {
         case WM_HOTKEY: {
-            if (wParam == VK_KEY_3_DOWN || wParam == VK_KEY_4_DOWN || wParam == VK_KEY_5_DOWN) {
-
+            if (wParam == VK_KEY_F12_DOWN) {
+                shortcutKey = !shortcutKey;
+            }
+            if (shortcutKey && VK_KEY_2_DOWN) {
+                String w = GetClipboardText();
+                MakeCard(w);
+            }
+            if (
+              shortcutKey &&
+              (wParam == VK_KEY_3_DOWN ||
+               wParam == VK_KEY_4_DOWN ||
+               wParam == VK_KEY_5_DOWN)
+            ) {
                 visible = !visible;
                 ShowWindow(hwnd, visible ? SW_SHOW : SW_HIDE);
                 visible ? SetWindowTop(hwnd) : SetWindowUnTop(hwnd);
@@ -112,9 +125,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             FillRect(hdc, &rc, hBrush);                         // 用黑色填充窗口
             DeleteObject(hBrush);
 
-            PaintText(hdc, text, rc.right - rc.left);
-            // 删除笔刷
-            DeleteObject(hBrush);
+            PaintText(hdc, text, rc.right - rc.left, true);
 
             EndPaint(hwnd, &ps);
             return 0;
@@ -245,9 +256,13 @@ HWND CreateMainWindow(const wchar_t CLASS_NAME[] = L"Sample Window Class") {
     // 置顶
     SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 
-    if (!RegisterHotKey(hwnd, VK_KEY_3_DOWN, 0, VK_KEY_3) ||  // MOD_ALT
-        !RegisterHotKey(hwnd, VK_KEY_4_DOWN, 0, VK_KEY_4) ||
-        !RegisterHotKey(hwnd, VK_KEY_5_DOWN, 0, VK_KEY_5)) {
+    if (
+      !RegisterHotKey(hwnd, VK_KEY_2_DOWN, 0, VK_KEY_2) ||  // MOD_ALT
+      !RegisterHotKey(hwnd, VK_KEY_3_DOWN, 0, VK_KEY_3) ||
+      !RegisterHotKey(hwnd, VK_KEY_4_DOWN, 0, VK_KEY_4) ||
+      !RegisterHotKey(hwnd, VK_KEY_5_DOWN, 0, VK_KEY_5) ||
+      !RegisterHotKey(hwnd, VK_KEY_F12_DOWN, 0, VK_F11)
+    ) {
         MessageBox(NULL, L"Hotkey Registration Failed!", L"Error!", MB_ICONEXCLAMATION | MB_OK);
         return 0;
     }
@@ -270,11 +285,10 @@ int WINAPI WinMain(
   _In_ int nShowCmd
 ) {
 
-    HWND hwnd = CreateMainWindow();
-
 #ifdef _DEBUG
     SetupConsole();
 #endif
+    HWND hwnd = CreateMainWindow();
 
     HANDLE hThread = CreateThread(NULL, 0, ExecutePythonScript, NULL, 0, NULL);
 
@@ -304,9 +318,11 @@ int WINAPI WinMain(
     CloseHandle(hThread);
     if (hwnd) {
         SaveWindowPlacement(hwnd);
+        UnregisterHotKey(hwnd, VK_KEY_2_DOWN);
         UnregisterHotKey(hwnd, VK_KEY_3_DOWN);
         UnregisterHotKey(hwnd, VK_KEY_4_DOWN);
         UnregisterHotKey(hwnd, VK_KEY_5_DOWN);
+        UnregisterHotKey(hwnd, VK_KEY_F12_DOWN);
     }
     return 0;
 }

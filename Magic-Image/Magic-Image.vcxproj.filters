@@ -16,6 +16,9 @@
     <Filter Include="Library Files">
       <UniqueIdentifier>{7d074a43-ee2f-4219-8c36-c762e7b4db94}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\card">
+      <UniqueIdentifier>{1e94d7bd-7984-4b70-9f59-59a46ac72094}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -36,6 +39,9 @@
     <ClCompile Include="context-menu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="card.cpp">
+      <Filter>Source Files\card</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="http-requests.h">
@@ -49,6 +55,9 @@
     </ClInclude>
     <ClInclude Include="context-menu.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="card.h">
+      <Filter>Source Files\card</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
