@@ -29,7 +29,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             if (wParam == VK_KEY_F12_DOWN) {
                 shortcutKey = !shortcutKey;
             }
-            if (shortcutKey && VK_KEY_2_DOWN) {
+            if (shortcutKey && wParam == VK_KEY_2_DOWN) {
                 String w = GetClipboardText();
                 MakeCard(w);
             }
